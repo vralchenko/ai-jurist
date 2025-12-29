@@ -1,7 +1,17 @@
 import puppeteer from 'puppeteer';
 import { marked } from 'marked';
+import { isRateLimited } from '@/utils/rateLimit';
 
 export async function POST(req: Request) {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+
+    if (isRateLimited(ip)) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again in a minute." }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
     let browser;
     try {
         const { html: markdownText, lang = 'en' } = await req.json();
@@ -26,17 +36,10 @@ export async function POST(req: Request) {
                     }
                     h1 { color: #2563eb; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 24px; font-weight: 900; }
                     h2 { color: #4f46e5; margin-top: 20px; font-weight: 700; }
+                    h3 { color: #0f172a; margin-top: 16px; font-weight: 700; border-left: 4px solid #6366f1; padding-left: 10px; }
                     
-                    ul { 
-                        list-style-type: none; 
-                        padding-left: 0; 
-                        margin-bottom: 16px; 
-                    }
-                    ul li { 
-                        margin-bottom: 8px; 
-                        position: relative; 
-                        padding-left: 25px; 
-                    }
+                    ul { list-style-type: none; padding-left: 0; margin-bottom: 16px; }
+                    ul li { margin-bottom: 8px; position: relative; padding-left: 25px; }
                     ul li::before { 
                         content: "•"; 
                         color: #6366f1; 
@@ -46,18 +49,8 @@ export async function POST(req: Request) {
                         font-size: 1.2em;
                     }
 
-                    ol { 
-                        padding-left: 25px; 
-                        margin-bottom: 16px;
-                        color: #1e293b;
-                    }
-                    ol li { 
-                        margin-bottom: 12px;
-                        padding-left: 5px;
-                    }
-                    ol li::before {
-                        content: none;
-                    }
+                    ol { padding-left: 25px; margin-bottom: 16px; color: #1e293b; }
+                    ol li { margin-bottom: 12px; padding-left: 5px; }
                     
                     strong { color: #0f172a; font-weight: 700; }
                     p { margin-bottom: 12px; }
@@ -104,7 +97,7 @@ export async function POST(req: Request) {
         return new Response(pdfBuffer as any, {
             headers: {
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': 'attachment; filename="analysis.pdf"'
+                'Content-Disposition': `attachment; filename="Legal_Analysis_${new Date().getTime()}.pdf"`
             }
         });
     } catch (e: any) {
