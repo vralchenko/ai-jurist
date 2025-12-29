@@ -5,10 +5,9 @@ import { useTheme } from 'next-themes';
 import { Sidebar } from '@/components/Sidebar';
 import { InputSection } from '@/components/InputSection';
 import { OutputArea } from '@/components/OutputArea';
-import { Footer } from '@/components/Footer';
 import { useTranslation } from '@/hooks/useTranslation';
 import RobotIcon from '../components/RobotIcon';
-import { Sun, Moon, CheckCircle, Menu, X, AlertCircle, Coins } from 'lucide-react';
+import { Sun, Moon, Menu, X, AlertCircle, Coins, CheckCircle } from 'lucide-react';
 import { supabase } from '@/utils/supabaseClient';
 
 export default function Home() {
@@ -29,47 +28,26 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'auto'; };
+    let sessionId = localStorage.getItem('session_id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem('session_id', sessionId);
+    }
   }, []);
 
-  // Load initial tokens from Supabase on mount
   useEffect(() => {
     const loadInitialTokens = async () => {
       try {
-        const { data, error } = await supabase
-          .from('token_usage')
-          .select('total_tokens')
-          .eq('id', 'global')
-          .maybeSingle();
-        setSessionTokens(data?.total_tokens ?? 0);
-      } catch (error) {
-        // Silently ignore DB load errors (RLS or connectivity issues)
-      }
+        const { data } = await supabase
+            .from('token_usage')
+            .select('total_tokens')
+            .eq('id', 'global')
+            .maybeSingle();
+        if (data) setSessionTokens(data.total_tokens);
+      } catch (error) {}
     };
     loadInitialTokens();
   }, []);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(async () => {
-      try {
-        const { error } = await supabase
-          .from('token_usage')
-          .upsert({
-            id: 'global',
-            total_tokens: sessionTokens,
-          });
-      } catch (error) {
-        // Silently ignore DB save errors (RLS or connectivity issues)
-      }
-    }, 1000);
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [sessionTokens]);
 
   const handleCopy = () => {
     if (!report) return;
@@ -96,17 +74,19 @@ export default function Home() {
         a.download = 'Legal_Analysis_Report.pdf';
         document.body.appendChild(a);
         a.click();
-        window.open(url, '_blank');
         window.URL.revokeObjectURL(url);
         a.remove();
       }
-    } catch (e) { console.error(e); } finally { setPdfLoading(false); }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   const handleStart = async () => {
     if (!userQuery) return;
     setLoading(true);
-    const startTokens = sessionTokens;
     setReport('');
     setErrorMessage(null);
 
@@ -114,6 +94,7 @@ export default function Home() {
     formData.append('documents', documentsText);
     formData.append('query', userQuery);
     formData.append('language', lang);
+    formData.append('sessionId', localStorage.getItem('session_id') || '');
 
     try {
       const res = await fetch('/api/analyze', { method: 'POST', body: formData });
@@ -128,56 +109,27 @@ export default function Home() {
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let fullText = '';
+
       if (reader) {
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
+          const chunk = decoder.decode(value);
           const lines = chunk.split('\n');
           for (const line of lines) {
             if (line.startsWith('data: ')) {
-              try {
-                const dataText = line.substring(6).trim();
-                if (!dataText || dataText === '[DONE]') continue;
-                
-                const data = JSON.parse(dataText);
-                if (data.choices?.[0]?.delta?.content) {
-                  const content = data.choices[0].delta.content;
-                  fullText += content;
-                  setReport(fullText);
-                  setSessionTokens((prev) => prev + Math.ceil(content.length / 4));
-                  if (scrollRef.current) {
-                    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-                  }
-                } else if (data.tokens) {
-                  let delta = 0;
-                  if (data.tokens.total !== undefined) {
-                    delta = data.tokens.total;
-                  } else if (data.tokens.actor !== undefined) {
-                    delta = data.tokens.actor;
-                  }
-                  setSessionTokens(startTokens + delta);
-                }
-              } catch (e) {
-                console.error("Error parsing SSE chunk:", e, line);
+              const dataText = line.substring(6).trim();
+              if (!dataText || dataText === '[DONE]') continue;
+              const data = JSON.parse(dataText);
+              if (data.choices?.[0]?.delta?.content) {
+                fullText += data.choices[0].delta.content;
+                setReport(fullText);
+              } else if (data.tokens?.total) {
+                setSessionTokens(prev => prev + data.tokens.total);
               }
             }
           }
         }
-
-        const subjectMatch = fullText.match(/^# SUBJECT:\s*(.*)$/m);
-        const rawTitle = subjectMatch ? subjectMatch[1] : (fullText.substring(0, 50) + '...');
-        const cleanTitle = rawTitle.replace(/[#*`_~]/g, '').trim().toUpperCase();
-
-        const historyItem = {
-          id: Date.now(),
-          date: new Date().toLocaleString(),
-          title: cleanTitle,
-          url: '', // No URL anymore
-          report: fullText
-        };
-        const existing = JSON.parse(localStorage.getItem('analysis_history') || '[]');
-        localStorage.setItem('analysis_history', JSON.stringify([historyItem, ...existing].slice(0, 20)));
         window.dispatchEvent(new Event('history_updated'));
       }
     } catch (e: any) {
@@ -190,7 +142,14 @@ export default function Home() {
   if (!mounted) return null;
 
   return (
-      <div className="flex h-screen w-screen bg-slate-50 dark:bg-[#08080a] overflow-hidden relative font-sans text-slate-900 dark:text-slate-100">
+      <div className="flex flex-1 h-full bg-transparent overflow-hidden relative font-sans text-slate-900 dark:text-slate-100">
+        {copied && (
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-emerald-500 text-white px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
+              <CheckCircle size={12} />
+              <span className="text-[10px] font-black uppercase">{t.copied}</span>
+            </div>
+        )}
+
         <div className={`fixed inset-0 z-50 lg:relative lg:inset-auto lg:flex ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} transition-transform duration-300`}>
           <Sidebar t={t} onSelect={(rep) => { setReport(rep); setIsSidebarOpen(false); setErrorMessage(null); }} />
           {isSidebarOpen && (
@@ -198,14 +157,7 @@ export default function Home() {
           )}
         </div>
 
-        {copied && (
-            <div className="fixed top-4 lg:top-16 left-1/2 -translate-x-1/2 z-[100] bg-emerald-500 text-white px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
-              <CheckCircle size={12} />
-              <span className="text-[10px] font-black uppercase">{t.copied}</span>
-            </div>
-        )}
-
-        <main className="flex-1 h-screen flex flex-col overflow-hidden relative">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
           <div className="flex-1 overflow-hidden p-2 lg:p-4 flex flex-col items-center w-full">
             <div className="max-w-4xl w-full flex flex-col gap-2 h-full overflow-hidden">
               <header className="flex justify-between items-center bg-white dark:bg-[#111114] p-2 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0 shadow-sm">
@@ -213,10 +165,10 @@ export default function Home() {
                   <button onClick={() => setIsSidebarOpen(true)} className="p-1 lg:hidden text-slate-600 dark:text-slate-400"><Menu size={16} /></button>
                   <h1 className="text-[11px] lg:text-[13px] font-black uppercase tracking-tight">{t.brandName}</h1>
                   {sessionTokens > 0 && (
-                    <span className="ml-2 flex items-center gap-1.5 text-[10px] lg:text-xs font-semibold tracking-tight text-slate-500 dark:text-slate-400">
-                      <Coins className="w-3 h-3 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-                      <span>{sessionTokens.toLocaleString()} used</span>
-                    </span>
+                      <span className="ml-2 flex items-center gap-1.5 text-[10px] lg:text-xs font-semibold tracking-tight text-slate-500 dark:text-slate-400">
+                    <Coins className="w-3 h-3 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                    <span>{sessionTokens.toLocaleString()} used</span>
+                  </span>
                   )}
                   {loading && <RobotIcon className="w-4 h-4 animate-spin text-indigo-500" />}
                 </div>
@@ -259,7 +211,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <Footer />
         </main>
       </div>
   );
