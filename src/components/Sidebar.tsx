@@ -6,7 +6,7 @@ import { ConfirmModal } from './ConfirmModal';
 
 interface SidebarProps {
     t: any;
-    onSelect: (report: string, url: string) => void;
+    onSelect: (report: string) => void;
 }
 
 export function Sidebar({ t, onSelect }: SidebarProps) {
@@ -43,7 +43,7 @@ export function Sidebar({ t, onSelect }: SidebarProps) {
                     <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
                         <History size={20} />
                         <h2 className="text-sm font-black uppercase tracking-[0.15em] leading-none">
-                            {t.historyTitle}
+                            {t.history}
                         </h2>
                     </div>
                     {history.length > 0 && (
@@ -52,7 +52,7 @@ export function Sidebar({ t, onSelect }: SidebarProps) {
                             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-[11px] font-black uppercase text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all border border-rose-100 dark:border-rose-500/20"
                         >
                             <Trash2 size={14} />
-                            {t.clearHistory}
+                            {t.clear}
                         </button>
                     )}
                 </div>
@@ -67,7 +67,7 @@ export function Sidebar({ t, onSelect }: SidebarProps) {
                         history.map((item) => (
                             <div
                                 key={item.id}
-                                onClick={() => onSelect(item.report, item.url)}
+                                onClick={() => onSelect(item.report)}
                                 className="group relative p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-slate-50 dark:bg-[#1a1a20] border border-slate-200 dark:border-slate-700 hover:border-indigo-500 transition-all cursor-pointer shadow-xs"
                             >
                                 <button
@@ -76,16 +76,11 @@ export function Sidebar({ t, onSelect }: SidebarProps) {
                                 >
                                     <X size={14} />
                                 </button>
-
                                 <div className="flex flex-col gap-2">
                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{item.date}</span>
                                     <h3 className="text-[11px] lg:text-xs font-black text-slate-900 dark:text-white leading-tight line-clamp-2 pr-6 uppercase tracking-tight">
                                         {item.title}
                                     </h3>
-                                    <div className="flex items-center gap-1.5 text-blue-500">
-                                        <ExternalLink size={12} />
-                                        <span className="text-[10px] font-medium truncate opacity-80">{item.url}</span>
-                                    </div>
                                 </div>
                             </div>
                         ))

@@ -16,9 +16,9 @@ export default function Home() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [resumeText, setResumeText] = useState('');
-  const [jobUrl, setJobUrl] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [documentsText, setDocumentsText] = useState('');
+  const [userQuery, setUserQuery] = useState('');
   const [report, setReport] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -106,15 +106,15 @@ export default function Home() {
   };
 
   const handleStart = async () => {
-    if (!resumeText || !jobUrl) return;
+    if (!userQuery) return;
     setLoading(true);
     const startTokens = sessionTokens;
     setReport('');
     setErrorMessage(null);
 
     const formData = new FormData();
-    formData.append('resume', resumeText);
-    formData.append('jobUrl', jobUrl);
+    formData.append('documents', documentsText);
+    formData.append('query', userQuery);
     formData.append('language', lang);
 
     try {
@@ -162,12 +162,12 @@ export default function Home() {
           }
         }
 
-        const metaMatch = fullText.match(/COMPANY:\s*(.*?)\s*\|\s*POSITION:\s*(.*)$/m);
+        const subjectMatch = fullText.match(/^# SUBJECT:\s*(.*)$/m);
         const historyItem = {
           id: Date.now(),
           date: new Date().toLocaleString(),
-          title: metaMatch ? `${metaMatch[1]} - ${metaMatch[2]}`.toUpperCase() : t.analysisReportTitle,
-          url: jobUrl,
+          title: subjectMatch ? subjectMatch[1].toUpperCase() : t.analysisReportTitle,
+          url: '', // No URL anymore
           report: fullText
         };
         const existing = JSON.parse(localStorage.getItem('analysis_history') || '[]');
@@ -186,7 +186,7 @@ export default function Home() {
   return (
       <div className="flex h-screen w-screen bg-slate-50 dark:bg-[#08080a] overflow-hidden relative font-sans text-slate-900 dark:text-slate-100">
         <div className={`fixed inset-0 z-50 lg:relative lg:inset-auto lg:flex ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} transition-transform duration-300`}>
-          <Sidebar t={t} onSelect={(rep, url) => { setReport(rep); setJobUrl(url); setIsSidebarOpen(false); setErrorMessage(null); }} />
+          <Sidebar t={t} onSelect={(rep) => { setReport(rep); setIsSidebarOpen(false); setErrorMessage(null); }} />
           {isSidebarOpen && (
               <button onClick={() => setIsSidebarOpen(false)} className="absolute top-4 right-4 p-2 bg-white dark:bg-[#111114] rounded-full shadow-md text-slate-600"><X size={18} /></button>
           )}
@@ -225,7 +225,7 @@ export default function Home() {
               </header>
 
               <div className="shrink-0">
-                <InputSection file={file} setFile={setFile} setResumeText={setResumeText} jobUrl={jobUrl} setJobUrl={setJobUrl} loading={loading} onStart={handleStart} t={t} />
+                <InputSection files={files} setFiles={setFiles} setDocumentsText={setDocumentsText} userQuery={userQuery} setUserQuery={setUserQuery} loading={loading} onStart={handleStart} t={t} />
               </div>
 
               <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden mb-1">
