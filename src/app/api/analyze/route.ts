@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         const country = geo?.country || 'Unknown';
         const city = geo?.city || 'Unknown';
         const sessionId = crypto.randomUUID();
-        const model = process.env.AI_MODEL_NAME || 'llama-3.3-70b-versatile';
+        const model = process.env.AI_MODEL_NAME || 'llama-3.1-8b-instant';
 
         const stream = new ReadableStream({
             async start(controller) {
@@ -90,9 +90,8 @@ export async function POST(req: NextRequest) {
                     if (supabaseAdmin) {
                       const criticContent = criticResponse.choices[0]?.message?.content || '';
                       const logData = {
-                        job_url: '', // No URL
-                        job_raw_text: userQuery,
-                        resume_raw_text: documentsText,
+                        situation_query: userQuery,
+                        documents_text: documentsText,
                         recommendations: criticContent,
                         tokens_actor: actorTokens,
                         tokens_critic: criticTokens,

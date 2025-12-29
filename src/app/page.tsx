@@ -166,10 +166,13 @@ export default function Home() {
         }
 
         const subjectMatch = fullText.match(/^# SUBJECT:\s*(.*)$/m);
+        const rawTitle = subjectMatch ? subjectMatch[1] : (fullText.substring(0, 50) + '...');
+        const cleanTitle = rawTitle.replace(/[#*`_~]/g, '').trim().toUpperCase();
+
         const historyItem = {
           id: Date.now(),
           date: new Date().toLocaleString(),
-          title: subjectMatch ? subjectMatch[1].toUpperCase() : (fullText.substring(0, 50) + '...').toUpperCase(),
+          title: cleanTitle,
           url: '', // No URL anymore
           report: fullText
         };
@@ -242,7 +245,7 @@ export default function Home() {
                       <button onClick={() => setErrorMessage(null)} className="ml-auto p-0.5 text-amber-600"><X size={12} /></button>
                     </div>
                 )}
-                <div className="flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 min-h-0 relative">
                   <OutputArea
                       report={report}
                       loading={loading}
