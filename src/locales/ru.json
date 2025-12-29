@@ -1,0 +1,16 @@
+{
+  "brandName": "AI ЮРИСТ",
+  "history": "ИСТОРИЯ",
+  "clear": "ОЧИСТИТЬ",
+  "noHistory": "Истории пока нет",
+  "uploadResume": "Загрузить резюме (PDF)",
+  "jobUrlPlaceholder": "Ссылка на вакансию...",
+  "analyzeNow": "Анализировать",
+  "analyzing": "Анализируем...",
+  "analysisResult": "Результат анализа",
+  "copyReport": "Копировать отчет",
+  "waitingForInput": "Ожидание данных для анализа...",
+  "copied": "Скопировано",
+  "analysisReportTitle": "Отчет об анализе",
+  "downloadPdf": "Скачать PDF"
+}
