@@ -6,9 +6,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { InputSection } from '@/components/InputSection';
 import { OutputArea } from '@/components/OutputArea';
 import { useTranslation } from '@/hooks/useTranslation';
-import RobotIcon from '../components/RobotIcon';
-import { Sun, Moon, Menu, X, AlertCircle, Coins, CheckCircle } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient';
+import { Sun, Moon, Menu, X, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function Home() {
   const { t, lang, setLang } = useTranslation();
@@ -21,32 +19,16 @@ export default function Home() {
   const [report, setReport] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [docxLoading, setDocxLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [sessionTokens, setSessionTokens] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    let sessionId = localStorage.getItem('session_id');
-    if (!sessionId) {
-      sessionId = crypto.randomUUID();
-      localStorage.setItem('session_id', sessionId);
+    if (!localStorage.getItem('session_id')) {
+      localStorage.setItem('session_id', crypto.randomUUID());
     }
-  }, []);
-
-  useEffect(() => {
-    const loadInitialTokens = async () => {
-      try {
-        const { data } = await supabase
-            .from('token_usage')
-            .select('total_tokens')
-            .eq('id', 'global')
-            .maybeSingle();
-        if (data) setSessionTokens(data.total_tokens);
-      } catch (error) {}
-    };
-    loadInitialTokens();
   }, []);
 
   const handleCopy = () => {
@@ -60,22 +42,25 @@ export default function Home() {
   const handleDownloadPdf = async () => {
     if (!report || pdfLoading) return;
     setPdfLoading(true);
+    setErrorMessage(null);
     try {
-      const response = await fetch('/api/pdf', {
+      const res = await fetch('/api/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html: report, lang }),
       });
-      if (response.ok) {
-        const blob = await response.blob();
+      if (res.status === 429) {
+        setErrorMessage("Занадто багато запитів. Зачекайте хвилину.");
+        return;
+      }
+      if (res.ok) {
+        const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'Legal_Analysis_Report.pdf';
-        document.body.appendChild(a);
+        a.download = `Legal_Analysis_${new Date().getTime()}.pdf`;
         a.click();
         window.URL.revokeObjectURL(url);
-        a.remove();
       }
     } catch (e) {
       console.error(e);
@@ -84,32 +69,56 @@ export default function Home() {
     }
   };
 
+  const handleDownloadDocx = async () => {
+    if (!report || docxLoading) return;
+    setDocxLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetch('/api/docx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: report, title: "Юридичний аналіз" }),
+      });
+      if (res.status === 429) {
+        setErrorMessage("Занадто багато запитів. Зачекайте хвилину.");
+        return;
+      }
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Legal_Report_${new Date().getTime()}.docx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDocxLoading(false);
+    }
+  };
+
   const handleStart = async () => {
     if (!userQuery) return;
     setLoading(true);
     setReport('');
     setErrorMessage(null);
-
     const formData = new FormData();
     formData.append('documents', documentsText);
     formData.append('query', userQuery);
     formData.append('language', lang);
     formData.append('sessionId', localStorage.getItem('session_id') || '');
-
     try {
       const res = await fetch('/api/analyze', { method: 'POST', body: formData });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        setErrorMessage(errorData.error || "Unknown Error");
+      if (res.status === 429) {
+        setErrorMessage("Rate limit exceeded. Please wait a minute.");
         setLoading(false);
         return;
       }
-
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let fullText = '';
-
       if (reader) {
         while (true) {
           const { value, done } = await reader.read();
@@ -120,13 +129,13 @@ export default function Home() {
             if (line.startsWith('data: ')) {
               const dataText = line.substring(6).trim();
               if (!dataText || dataText === '[DONE]') continue;
-              const data = JSON.parse(dataText);
-              if (data.choices?.[0]?.delta?.content) {
-                fullText += data.choices[0].delta.content;
-                setReport(fullText);
-              } else if (data.tokens?.total) {
-                setSessionTokens(prev => prev + data.tokens.total);
-              }
+              try {
+                const data = JSON.parse(dataText);
+                if (data.choices?.[0]?.delta?.content) {
+                  fullText += data.choices[0].delta.content;
+                  setReport(fullText);
+                }
+              } catch (e) {}
             }
           }
         }
@@ -149,52 +158,35 @@ export default function Home() {
               <span className="text-[10px] font-black uppercase">{t.copied}</span>
             </div>
         )}
-
         <div className={`fixed inset-0 z-50 lg:relative lg:inset-auto lg:flex ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} transition-transform duration-300`}>
           <Sidebar t={t} onSelect={(rep) => { setReport(rep); setIsSidebarOpen(false); setErrorMessage(null); }} />
-          {isSidebarOpen && (
-              <button onClick={() => setIsSidebarOpen(false)} className="absolute top-4 right-4 p-2 bg-white dark:bg-[#111114] rounded-full shadow-md text-slate-600"><X size={18} /></button>
-          )}
         </div>
-
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
           <div className="flex-1 overflow-hidden p-2 lg:p-4 flex flex-col items-center w-full">
             <div className="max-w-4xl w-full flex flex-col gap-2 h-full overflow-hidden">
               <header className="flex justify-between items-center bg-white dark:bg-[#111114] p-2 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setIsSidebarOpen(true)} className="p-1 lg:hidden text-slate-600 dark:text-slate-400"><Menu size={16} /></button>
+                  <button onClick={() => setIsSidebarOpen(true)} className="p-1 lg:hidden"><Menu size={16} /></button>
                   <h1 className="text-[11px] lg:text-[13px] font-black uppercase tracking-tight">{t.brandName}</h1>
-                  {sessionTokens > 0 && (
-                      <span className="ml-2 flex items-center gap-1.5 text-[10px] lg:text-xs font-semibold tracking-tight text-slate-500 dark:text-slate-400">
-                    <Coins className="w-3 h-3 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-                    <span>{sessionTokens.toLocaleString()} used</span>
-                  </span>
-                  )}
-                  {loading && <RobotIcon className="w-4 h-4 animate-spin text-indigo-500" />}
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-lg bg-slate-100 dark:bg-[#1a1a20] border border-slate-200 dark:border-slate-700">
+                  <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
                     {theme === 'dark' ? <Sun size={12} /> : <Moon size={12} />}
                   </button>
-                  <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-slate-100 dark:bg-[#1a1a20] border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-lg text-[9px] font-black uppercase outline-none cursor-pointer">
+                  <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-slate-100 dark:bg-[#1a1a20] border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-lg text-[9px] font-black uppercase outline-none">
                     {['ru', 'uk'].map(l => (<option key={l} value={l}>{l === 'uk' ? 'UA' : l.toUpperCase()}</option>))}
                   </select>
                 </div>
               </header>
-
               <div className="shrink-0">
                 <InputSection files={files} setFiles={setFiles} setDocumentsText={setDocumentsText} userQuery={userQuery} setUserQuery={setUserQuery} loading={loading} onStart={handleStart} t={t} />
               </div>
-
               <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden mb-1 lg:mb-4">
                 {errorMessage && (
-                    <div className="shrink-0 p-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-start gap-2.5 animate-in fade-in zoom-in duration-300">
+                    <div className="shrink-0 p-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-start gap-2.5">
                       <AlertCircle className="text-amber-600 shrink-0 w-4 h-4" />
-                      <div className="flex flex-col gap-0">
-                        <p className="text-[9px] font-black uppercase tracking-widest leading-none mb-1">System Notice</p>
-                        <p className="text-[10px] text-amber-800 dark:text-amber-300 leading-tight font-medium break-all">{errorMessage}</p>
-                      </div>
-                      <button onClick={() => setErrorMessage(null)} className="ml-auto p-0.5 text-amber-600"><X size={12} /></button>
+                      <p className="text-[10px] text-amber-800 dark:text-amber-300 leading-tight">{errorMessage}</p>
+                      <button onClick={() => setErrorMessage(null)} className="ml-auto text-amber-600"><X size={12} /></button>
                     </div>
                 )}
                 <div className="flex-1 min-h-0 relative">
@@ -202,9 +194,11 @@ export default function Home() {
                       report={report}
                       loading={loading}
                       pdfLoading={pdfLoading}
+                      docxLoading={docxLoading}
                       scrollRef={scrollRef}
                       onCopy={handleCopy}
                       onDownloadPdf={handleDownloadPdf}
+                      onDownloadDocx={handleDownloadDocx}
                       t={t}
                   />
                 </div>
