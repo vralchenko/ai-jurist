@@ -7,7 +7,8 @@ const translations: Record<string, any> = { ru, uk };
 export function useTranslation() {
     const [lang, setLang] = useState<string>(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('app_lang') || 'ru';
+            const saved = localStorage.getItem('app_lang');
+            return (saved === 'ru' || saved === 'uk') ? saved : 'ru';
         }
         return 'ru';
     });
@@ -26,7 +27,7 @@ export function useTranslation() {
         window.dispatchEvent(new CustomEvent('lang_update', { detail: newLang }));
     };
 
-    const t = translations[lang] || translations['en'];
+    const t = translations[lang] || translations['ru'];
 
     return { t, lang, setLang: updateLang };
 }
