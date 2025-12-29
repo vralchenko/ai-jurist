@@ -18,7 +18,7 @@ export function OutputArea({ report, loading, pdfLoading, scrollRef, onCopy, onD
     if (!loading && !report) return null;
 
     return (
-        <div className="bg-white dark:bg-[#111114] rounded-2xl lg:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-[500px] lg:h-[600px]">
+        <div className="bg-white dark:bg-[#111114] rounded-2xl lg:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col flex-1 min-h-[400px]">
             <div className="p-3 lg:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50 dark:bg-white/5">
                 <div className="flex items-center gap-2">
                     <BarChart3 size={18} className="text-indigo-500" />
@@ -48,7 +48,7 @@ export function OutputArea({ report, loading, pdfLoading, scrollRef, onCopy, onD
                 )}
             </div>
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar scroll-smooth">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar scroll-smooth pb-20">
                 {loading && !report ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4">
                         <Loader2 className="animate-spin text-indigo-500" size={32} />

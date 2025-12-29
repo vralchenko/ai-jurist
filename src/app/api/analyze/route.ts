@@ -58,16 +58,16 @@ export async function POST(req: NextRequest) {
                 try {
                     const actorResponse = await groq.chat.completions.create({
                         model,
-                        messages: [{ role: "system", content: SYSTEM_PROMPT(language) }, { role: "user", content: USER_PROMPT(documentsText, userQuery) }],
+                        messages: [{ role: "system", content: SYSTEM_PROMPT() }, { role: "user", content: USER_PROMPT(documentsText, userQuery) }],
                         temperature: 0.3,
                     });
                     const draftAnalysis = actorResponse.choices[0]?.message?.content || "";
                     const actorTokens = actorResponse.usage?.total_tokens ?? 0;
-                    controller.enqueue(`data: ${JSON.stringify({ tokens: { actor: actorTokens } })}\\n\\n`);
+                    controller.enqueue(`data: ${JSON.stringify({ tokens: { actor: actorTokens } })}\n\n`);
                     
                     const criticStream = await groq.chat.completions.create({
                         model,
-                        messages: [{ role: "system", content: CRITIC_SYSTEM_PROMPT(language) }, { role: "user", content: CRITIC_USER_PROMPT(documentsText, userQuery, draftAnalysis) }],
+                        messages: [{ role: "system", content: CRITIC_SYSTEM_PROMPT() }, { role: "user", content: CRITIC_USER_PROMPT(documentsText, userQuery, draftAnalysis) }],
                         temperature: 0.1,
                         stream: true,
                     });
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
                     
                     const criticResponse = await groq.chat.completions.create({
                       model,
-                      messages: [{ role: "system", content: CRITIC_SYSTEM_PROMPT(language) }, { role: "user", content: CRITIC_USER_PROMPT(documentsText, userQuery, draftAnalysis) }],
+                      messages: [{ role: "system", content: CRITIC_SYSTEM_PROMPT() }, { role: "user", content: CRITIC_USER_PROMPT(documentsText, userQuery, draftAnalysis) }],
                       temperature: 0.1,
                     });
                     const criticTokens = criticResponse.usage?.total_tokens ?? 0;

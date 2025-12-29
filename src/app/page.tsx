@@ -166,7 +166,7 @@ export default function Home() {
         const historyItem = {
           id: Date.now(),
           date: new Date().toLocaleString(),
-          title: subjectMatch ? subjectMatch[1].toUpperCase() : t.analysisReportTitle,
+          title: subjectMatch ? subjectMatch[1].toUpperCase() : (fullText.substring(0, 50) + '...').toUpperCase(),
           url: '', // No URL anymore
           report: fullText
         };
@@ -228,7 +228,7 @@ export default function Home() {
                 <InputSection files={files} setFiles={setFiles} setDocumentsText={setDocumentsText} userQuery={userQuery} setUserQuery={setUserQuery} loading={loading} onStart={handleStart} t={t} />
               </div>
 
-              <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden mb-1">
+              <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden mb-1 lg:mb-4">
                 {errorMessage && (
                     <div className="shrink-0 p-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-start gap-2.5 animate-in fade-in zoom-in duration-300">
                       <AlertCircle className="text-amber-600 shrink-0 w-4 h-4" />
@@ -239,7 +239,7 @@ export default function Home() {
                       <button onClick={() => setErrorMessage(null)} className="ml-auto p-0.5 text-amber-600"><X size={12} /></button>
                     </div>
                 )}
-                <div className="flex-1 min-h-0 overflow-hidden rounded-b-2xl lg:rounded-b-3xl">
+                <div className="flex-1 min-h-0 overflow-hidden">
                   <OutputArea
                       report={report}
                       loading={loading}
