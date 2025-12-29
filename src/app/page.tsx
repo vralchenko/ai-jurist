@@ -73,8 +73,7 @@ export default function Home() {
 
   const handleCopy = () => {
     if (!report) return;
-    const cleanText = report.replace(/^#\s*COMPANY:.*$/m, '').replace(/Match Score:\s*\d+%/i, '').trim();
-    navigator.clipboard.writeText(cleanText).then(() => {
+    navigator.clipboard.writeText(report).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -94,8 +93,7 @@ export default function Home() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const metaMatch = report.match(/COMPANY:\s*(.*?)\s*\|\s*POSITION:\s*(.*)$/m);
-        a.download = metaMatch ? `${metaMatch[1]}_${metaMatch[2]}.pdf`.replace(/\s+/g, '_') : 'Analysis_Report.pdf';
+        a.download = 'Legal_Analysis_Report.pdf';
         document.body.appendChild(a);
         a.click();
         window.open(url, '_blank');
@@ -139,8 +137,11 @@ export default function Home() {
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const data = JSON.parse(line.replace('data: ', ''));
-                if (data.choices[0]?.delta?.content) {
+                const dataText = line.substring(6).trim();
+                if (!dataText || dataText === '[DONE]') continue;
+                
+                const data = JSON.parse(dataText);
+                if (data.choices?.[0]?.delta?.content) {
                   const content = data.choices[0].delta.content;
                   fullText += content;
                   setReport(fullText);
@@ -157,7 +158,9 @@ export default function Home() {
                   }
                   setSessionTokens(startTokens + delta);
                 }
-              } catch (e) {}
+              } catch (e) {
+                console.error("Error parsing SSE chunk:", e, line);
+              }
             }
           }
         }

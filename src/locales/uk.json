@@ -3,14 +3,20 @@
   "history": "ІСТОРІЯ",
   "clear": "ОЧИСТИТИ",
   "noHistory": "Історії ще немає",
-  "uploadDocs": "Завантажити документи (PDF)",
+  "uploadDocs": "Завантажити файли",
   "queryPlaceholder": "Опишіть вашу ситуацію або задайте питання юристу...",
   "analyzeNow": "Аналізувати",
   "analyzing": "Аналізуємо...",
+  "readingFiles": "Читання файлів...",
   "analysisResult": "Юридичний аналіз",
   "copyReport": "Копіювати відповідь",
   "waitingForInput": "Очікування даних для аналізу...",
   "copied": "Скопійовано",
   "analysisReportTitle": "Результат аналізу",
-  "downloadPdf": "Завантажити PDF"
+  "downloadPdf": "Завантажити PDF",
+  "initializingAI": "Ініціалізація ШІ...",
+  "clearHistoryTitle": "Очистити історію",
+  "clearHistoryMessage": "Це назавжди видалить усі ваші записи аналізів. Ви впевнені?",
+  "confirm": "Підтвердити",
+  "cancel": "Скасувати"
 }

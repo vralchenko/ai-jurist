@@ -1,12 +1,12 @@
 # AI Jurist ⚖️🤖
 
-A professional tool designed to analyze legal situations and documents. The system uses AI to conduct a deep analysis based on Ukrainian legislation, identify legal risks, and provide actionable recommendations.
+A professional legal assistant tool designed to analyze legal situations and documents. The system uses AI to conduct a deep analysis based on Ukrainian legislation, identify legal risks, and provide actionable recommendations.
 
 ## 🚀 Key Features
 
 * **Legal Analysis**: Deep analysis of user queries and legal documents (contracts, statements, lawsuits, etc.).
 * **Ukrainian Law Focus**: Specialized knowledge base focusing exclusively on the current legislation of Ukraine.
-* **Multi-document Support**: Upload multiple PDF documents (up to 5) for simultaneous analysis.
+* **Multi-format document Support**: Upload multiple documents (up to 5) for simultaneous analysis. Supports PDF, DOCX, Images (OCR), and Text files.
 * **Risk Assessment**: Color-coded risk levels (Low/Medium/High) to quickly identify critical issues.
 * **Actor-Critic AI Architecture**: Dual-stage AI processing for maximum accuracy and fact-checking.
 * **PDF Export**: Save professional legal analysis reports as PDF documents.

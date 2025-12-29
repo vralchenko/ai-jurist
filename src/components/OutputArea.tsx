@@ -48,7 +48,7 @@ export function OutputArea({ report, loading, pdfLoading, scrollRef, onCopy, onD
                 )}
             </div>
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar scroll-smooth pb-20">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar pb-20">
                 {loading && !report ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4">
                         <Loader2 className="animate-spin text-indigo-500" size={32} />

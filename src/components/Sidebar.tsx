@@ -92,8 +92,8 @@ export function Sidebar({ t, onSelect }: SidebarProps) {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onConfirm={handleClearAll}
-                title={t.clearHistoryTitle || "Clear History"}
-                message={t.clearHistoryMessage || "This will permanently delete all your analysis records. Are you sure?"}
+                title={t.clearHistoryTitle}
+                message={t.clearHistoryMessage}
                 t={t}
             />
         </>

@@ -34,13 +34,13 @@ export function ConfirmModal({ isOpen, onClose, onConfirm, title, message, t }: 
                             onClick={onClose}
                             className="flex-1 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-[#1a1a20] text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
                         >
-                            {t.cancel || 'Cancel'}
+                            {t.cancel}
                         </button>
                         <button
                             onClick={() => { onConfirm(); onClose(); }}
                             className="flex-1 py-3 px-4 rounded-2xl bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 shadow-lg shadow-rose-500/20 active:scale-95 transition-all"
                         >
-                            {t.confirmDelete || 'Delete All'}
+                            {t.confirm}
                         </button>
                     </div>
                 </div>

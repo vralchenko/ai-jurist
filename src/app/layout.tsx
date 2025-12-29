@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
     title: 'AI Jurist',
-    description: 'Analyze legal documents and resumes',
+    description: 'Professional legal document assistant for Ukrainian legislation',
 };
 
 export default function RootLayout({
